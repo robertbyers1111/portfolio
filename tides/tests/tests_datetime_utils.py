@@ -6,7 +6,7 @@ tests_datetime_utils - Unit tests for tideapp's datetime utilities
 import pytest
 from datetime import datetime
 from freezegun import freeze_time
-from datetime_utils import day2datetime
+from datetime_utils import day2datetime, timestr2time
 
 class Tests_datetime_utils():
 
@@ -48,3 +48,28 @@ class Tests_datetime_utils():
         for i in range(1, 5):
             d = day2datetime(i)
             assert d.year == 2023 and d.month == 1 and d.day == i
+
+    @pytest.mark.parametrize("timestr, hour, minute", [
+        ('1:00am', 1, 0),
+        ('1:00pm', 13, 0),
+        ('01:22pm', 1, 22),
+        ('2:34am', 2, 34),
+        ('2:34 am', 2, 34),
+        ('3:45 pm', 15, 45),
+        ('11:59 pm', 23, 59),
+    ])
+    def test_timestr2time_01(self, timestr, hour, minute):
+        t = timestr2time(timestr)
+        assert t.hour == hour and t.minute == minute
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("timestr", [
+        '0:00am',
+        '0:00pm',
+        '12:60 am',
+        '24:34 am',
+        '24:34 pm',
+    ])
+    def test_timestr2time_01(self, timestr):
+        with pytest.raises(ValueError):
+            timestr2time(timestr)

@@ -29,13 +29,14 @@ The input file is json formatted and contains a list of URLs. For example..
 }
 """
 
+import json
 import re
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from time import sleep
-from datetime_utils import day2datetime
+from datetime_utils import day2datetime, timestr2time, date_time_combine
 from cli_utils import process_command_line
 
 class TidesApp():
@@ -45,50 +46,49 @@ class TidesApp():
     # URLs for querying tide data for specific location names. If charting geo-trends, best to keep this list
     # in geographic north-to-south order.
     DEFAULT_URLS = [
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salisbury/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Newburyport/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rowley/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Crane-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Wingaersheek-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rockport/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Good-Harbor-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Gloucester/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Singing-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Manchester-Harbor/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Beverly-Cove/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salem/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rice-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salem-Salem-Harbor/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Marblehead-Harbor/",
-        "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Riverhead-Beach/",
-        "https://www.tideschart.com/United-States/Massachusetts/Suffolk-County/Phillips-Beach/"
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salisbury/"},
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Newburyport/"},
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rowley/"},
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Crane-Beach/"},
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Wingaersheek-Beach/"},
+        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rockport/"},
     ]
 
     # XPATHs
     weekly_table_xpath = r'//table/child::caption[contains(text(),"Tide table for") and contains(text(), "this week")]/../tbody/tr'
 
 
-    def load_user_locations(self, locations=None):
+    def load_user_locations(self, file=None):
         """
-        Initialize the list of locations for which tideschart.com will be queried.
+        Load the list of locations from a file into the tidesapp object.
+
+        Read the list of locations for which tideschart.com will be queried.
 
         Some basic sanity checks are performed, after which the list is saved and the method returns.
 
         Args:
-        locations - (list of str) A list of URLs at tideschart.com. Default: a pre-defined list is
-                    supplied here as an example.
+        file - (str) A JSON-formatted file containing a list of URLs. Each URL should be a valid
+                     tideschart.com request. If no filename is passed in, a default list is loaded.
 
         Returns: (nothing)
         """
 
-        if not locations:
-            self.locations = DEFAULT_URLS
+        if not file:
+            self.locations = TidesApp.DEFAULT_URLS
         else:
-            self.locations = locations
+            with open(file) as fh:
+                data = json.load(fh)
+                if not 'URLs' in data.keys():
+                    print(f"ERROR: No URLs retrieved from {file}")
+                    raise ValueError
+                else:
+                    self.locations = data['URLs']
 
         for location in self.locations:
-            raise ValueError if not isinstance(location, str)
-            raise ValueError if not location.startswith(r"https://www.tideschart.com/")
+            if not isinstance(location['URL'], str):
+                raise ValueError
+            if not location['URL'].startswith(r"https://www.tideschart.com/"):
+                raise ValueError
 
 
     def parse_high_tide_data(self, data):
@@ -141,11 +141,14 @@ class TidesApp():
             (matched.group('tide3_time'), matched.group('tide3_hilo')),
             (matched.group('tide4_time'), matched.group('tide4_hilo'))
         ]:
+            # Check if this tide data is for a high tide or low tide
             if hilo == '▲':
+                # ok .. it is for a high tide! Continue processing its data..
+
                 # Convert a time string (e.g., "3:32 am") to a python time object
                 this_tide_time = timestr2time(timestr)
                 # Combine with the day's datetime
-                this_tide_datetime = this_day + this_tide_time
+                this_tide_datetime = date_time_combine(this_day, this_tide_time)
                 # Append the datetime
                 this_day_tides.append(this_tide_datetime)
 
@@ -157,7 +160,6 @@ class TidesApp():
             raise ValueError
 
         # TODO..
-        # Convert times to unix time+fraction of day (in UTC)
         # Return the list of tides for this location
 
         return []
@@ -201,8 +203,8 @@ class TidesApp():
         Calling the weekly tides retriver for each of the user's locations
         """
 
-        process_command_line()
-        load_user_locations()
+        file = process_command_line()
+        self.load_user_locations(file)
         self.driver = driver = webdriver.Chrome()
         self.wait = wait = WebDriverWait(driver, 30)
         weekly_tides = {}

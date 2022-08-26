@@ -21,18 +21,19 @@ class Tests_cli_utils():
         assert os.path.isfile(file)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("mock_cli", [
-        ['-h'],
-        ['--help'],
-        ['-f', 'nofile.dat'],
-        ['bogus.dat'],
-        ['-g', 'sample_input.json'],
-        ['-f', 'sample_input.json', 'bogus.dat'],
-        ['-f=sample_input.json', 'bogus.dat'],
-        ['-f'],
-        ['--file'],
+    @pytest.mark.parametrize("mock_cli, expected_error", [
+        (['-h'], SystemExit),
+        (['--help'], SystemExit),
+        (['bogus.dat'], SystemExit),
+        (['-g', 'sample_input.json'], SystemExit),
+        (['-f', 'sample_input.json', 'bogus.dat'], SystemExit),
+        (['-f=sample_input.json', 'bogus.dat'], SystemExit),
+        (['-f'], SystemExit),
+        (['--file'], SystemExit),
+        (['-f', 'nofile.dat'], FileNotFoundError),
     ])
-    def test_cli_utils_02(self, mock_cli):
+    def test_cli_utils_02(self, mock_cli, expected_error):
         sys.argv[1:] = mock_cli
-        process_command_line()
+        with pytest.raises(expected_error):
+            process_command_line()
 

@@ -5,7 +5,7 @@ MODULE: datetime_utils - A module for manipulating dates and times for the tides
 
 from datetime import datetime, date
 
-def day2datetime(queried_day):
+def day2datetime(queried_day: int):
     """
     Accepts a day-of-month integer. Returns a datetime object equivalent.
 
@@ -35,6 +35,14 @@ def day2datetime(queried_day):
         A Python datetime object corresponding to the queried day
     """
 
+    # If the inputted day is in a string, convert it to int
+    if isinstance(queried_day, str):
+        queried_day = int(queried_day)
+
+    # Make sure the value passed in is an integer
+    if not isinstance(queried_day, int):
+        raise ValueError
+
     # Get today's datetime
     today_datetime = date.today()
 
@@ -52,3 +60,37 @@ def day2datetime(queried_day):
     # Return the desired datetime
     return datetime(queried_year, queried_month, queried_day)
 
+def timestr2time(timestr):
+    """
+    Accepts a string as "HH:MM AM" or "HH:MM PM". Returns a python datetime object equivalent.
+
+    The returned object is a full python datetime object, but only its hour, minute and second
+    are set here. The caller must be aware of this!
+
+    Args..
+    timestr (str) A string with the time of day to be converted.
+
+    Returns..
+    timeval (datetime) A python datetime object with its hour, minute set from the input string
+    """
+    # Remove any spaces from the input
+    timestr = ''.join(timestr.split())
+    # Return the datetime object
+    return datetime.strptime(timestr, "%I:%M%p")
+
+def date_time_combine(dateval, timeval):
+    """
+    Accepts a day's date and a time of day. Combine them and return a python datetime object.
+
+    Args..
+    dateval (datetime) A python datetime object. Only the year, month and day will be used.
+    timeval (datetime) A python datetime object. Only the hour, minute and second will be used.
+
+    Returns..
+    datetimeval (datetime) A python datetime object with its year, month, day taken from dateval and
+                           its hour, minute, second taken from timeval.
+    """
+    return datetime(
+        dateval.year, dateval.month, dateval.day,
+        timeval.hour, timeval.minute, 0
+    )
