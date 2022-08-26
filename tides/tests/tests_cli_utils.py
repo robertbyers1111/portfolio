@@ -1,0 +1,38 @@
+#!/bin/env python3
+"""
+tests_cli_utils - Unit tests for tideapp's cli utility
+"""
+
+import pytest
+import sys
+import os
+from cli_utils import process_command_line
+
+class Tests_cli_utils():
+
+    @pytest.mark.parametrize("mock_cli", [
+        ['-f', 'sample_input.json'],
+        ['-f=sample_input.json'],
+        ['--file=sample_input.json'],
+    ])
+    def test_cli_utils_01(self, mock_cli):
+        sys.argv[1:] = mock_cli
+        file = process_command_line()
+        assert os.path.isfile(file)
+
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("mock_cli", [
+        ['-h'],
+        ['--help'],
+        ['-f', 'nofile.dat'],
+        ['bogus.dat'],
+        ['-g', 'sample_input.json'],
+        ['-f', 'sample_input.json', 'bogus.dat'],
+        ['-f=sample_input.json', 'bogus.dat'],
+        ['-f'],
+        ['--file'],
+    ])
+    def test_cli_utils_02(self, mock_cli):
+        sys.argv[1:] = mock_cli
+        process_command_line()
+
