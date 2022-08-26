@@ -9,6 +9,8 @@ import sys
 
 def process_command_line():
     """
+    Processes the command line. Returns the filename of the input file.
+
     Uses argparse to process the user's command line.
 
     Currently only supports a filename argument (-f, or --file=)
