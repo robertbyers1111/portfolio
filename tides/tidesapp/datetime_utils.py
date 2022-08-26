@@ -28,14 +28,11 @@ def day2datetime(queried_day):
     Appropriate handling of month overflow and year overflow conditions
     are fully supported.
 
-    Motivation: This method exists because the tideschart.com weekly tide table provides *only*
-    the day-of-month number for the tides covering the next seven days. Since the first row
-    of tide data is *always* for the current day, we can easily deduce the year and month.
+    Args..
+        queried_day: (int) The day of month to be queried
 
-    Args
-    queried_day: (int) The day of month to be queried
-
-    :Returns: (datetime) python datetime object corresponding to the queried day
+    Returns..
+        A Python datetime object corresponding to the queried day
     """
 
     # Get today's datetime
