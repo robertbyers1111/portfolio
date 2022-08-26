@@ -28,17 +28,25 @@ class Tests_tidesapp_viaSelenium():
         app = TidesApp()
         app.load_user_locations(filename)
 
-        #''.join(['Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft ',
-        #         '3:41pm ▼ 1.64 ft ',
-        #         '▲ 5:57am ▼ 7:35pm']),
+    @pytest.mark.xfail
+    @pytest.mark.parametrize("data", [
+        ''.join(['Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft ',
+                 '3:41xx ▼ 1.64 ft ', '▲x5:57am ▼ 7:35pm']),
+        ])
+    def test_parse_high_tide_data_01(self, data):
+        app = TidesApp()
+        with pytest.raises(ValueError):
+            app.parse_high_tide_data(data)
+
     @pytest.mark.parametrize("data", [
         ''.join(['Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft ',
                  '3:41pm ▼ 1.64 ft 9:17pm ▲ 7.55 ft ',
                  '▲ 5:57am ▼ 7:35pm']),
         ''.join(['Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft ',
+                 '3:41pm ▼ 1.64 ft ',
                  '▲ 5:57am ▼ 7:35pm']),
     ])
-    def test_parse_high_tide_data_01(self, data):
+    def test_parse_high_tide_data_02(self, data):
         app = TidesApp()
         app.parse_high_tide_data(data)
 

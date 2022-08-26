@@ -9,7 +9,7 @@ import sys
 
 def process_command_line():
     """
-    Processes the command line. Returns the filename of the input file.
+    Processes the command line. Returns the name of the input file.
 
     This is not a generic method. This method supports *ONLY* the
     tidesapp's CLI syntax.
@@ -25,7 +25,6 @@ def process_command_line():
 
     Returns..
     filename (str) the name of a file containing location URLs.
-
     """
 
     parser = argparse.ArgumentParser()

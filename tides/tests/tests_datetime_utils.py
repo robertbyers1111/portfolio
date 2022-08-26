@@ -11,14 +11,16 @@ from datetime_utils import day2datetime, timestr2time
 class Tests_datetime_utils():
 
     """
-    Each test uses freeze_time (from the freezegun pytest plugin) to cause the
-    test to operate in the context of the frozen time. This provides persistent
-    test consistency (i.e., you'll get the same results if you run this unit test
-    on Monday, Saturday, August 16th, December 31st or the 29th of February)
+    Each test uses freeze_time (from the freezegun pytest plugin) to
+    cause the test to operate in the context of the frozen time. This
+    provides persistent test consistency (i.e., you'll get the same
+    results if you run this unit test on Monday, Saturday, August
+    16th, December 31st or the 29th of February)
 
-    In each test, the variable 'i' represents a day-of-month, and is relative to
-    the datetime set by freeze_time. The tests loop through several values of 'i'
-    to assert that the called function operates properly in various scenarios.
+    In each test, the variable 'i' represents a day-of-month, and
+    is relative to the datetime set by freeze_time. The tests loop
+    through several values of 'i' to assert that the called function
+    operates properly in various scenarios.
     """
 
     @freeze_time(datetime(2022, 1, 1))
