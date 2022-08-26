@@ -11,6 +11,9 @@ def process_command_line():
     """
     Processes the command line. Returns the filename of the input file.
 
+    This is not a generic method. This method supports *ONLY* the
+    tidesapp's CLI syntax.
+
     Uses argparse to process the user's command line.
 
     Currently only supports a filename argument (-f, or --file=)
