@@ -112,21 +112,35 @@ class Int2str():
     }
 
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __int2str_util__(self, n, lang):
         """
-        THIS METHOD IS FOR INTERNAL USE ONLY.
+        Receives an integer from 1 to 999. Returns the words equivalent.
 
-        This method translates any integer between 1 and 999. It is used to translate the number of single units,
-        as well as the number of thousands, millions, etc. As such, it is used as a building-block to build the
-        larger numbers passed into int2str()
+        ==> THIS METHOD IS FOR INTERNAL USE ONLY.
 
-        This method is only to be called internally. As such, it assumes bounds and type checking of the paramaters
-        has already taken place in the scope of the calling method. Only a minimal bounds check is done here.
+        This method translates any integer between 1 and 999. It is used
+        to translate the number of single units, as well as the number of
+        thousands, millions, etc. As such, it is used as a building-block
+        to build the larger numbers passed into int2str()
 
-        :Param n: An integer in the range 1 <= n <= 999
-        :Param lang: An Int2strLang enum specifying the language to be used. Default: ENGLISH
-        :Returns: A string representation of the integer, in the given language
+        This method is only to be called internally. We assume bounds and
+        type checking of the paramaters has already taken place (in the
+        scope of the calling method). Therefore, only a minimal bounds
+        check is performed here.
+
+        Args..
+
+            n, An integer in the range 1 <= n <= 999
+
+            lang, An Int2strLang enum specifying the language to be used.
+                  Default: ENGLISH
+
+        Returns..
+
+            the_number, A string representation of the integer, in
+                        the given language
+
         """
 
         # Fail if n is out of range
@@ -163,11 +177,22 @@ class Int2str():
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def int2str(self, n, lang=None):
         """
-        Returns a string containing the spoken-word equivalent of an integer.
+        Accepts an integer and language (optional). Returns the word equivalent.
 
-        :Param n: An integer in the range MIN <= n <= MAX
-        :Param lang: An Int2strLang enum specifying the language to be used. Default: ENGLISH
-        :Returns: A string representation of the integer, in the given language
+        This method accepts an integer and language. Returns a string containing
+        the spoken-word equivalent of an integer in the selected language.
+
+        Args..
+
+            n, An integer in the range 1 <= n <= 999
+
+            lang, An Int2strLang enum specifying the language to be used.
+                  Default: ENGLISH
+
+        Returns..
+
+            the_number, A string representation of the integer, in
+                        the given language
         """
 
         # Use default language if none was passed in
@@ -222,8 +247,23 @@ class Int2str():
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def int2str(n, lang=None):
     """
-    A wrapper method for int2str(). Inside this wrapper we instantiate an
-    Int2str() object and then invoke the class int2str() method, returning its result.
+    Accepts an integer and language (optional). Returns the word equivalent.
+
+    This is a wrapper method for int2str(). Inside this wrapper we
+    instantiate an Int2str() object and then invoke the class method
+    int2str(), returning its result.
+
+    Args..
+
+        n, An integer in the range 1 <= n <= 999
+
+        lang, An Int2strLang enum specifying the language to be used.
+              Default: ENGLISH
+
+    Returns..
+
+        the_number, A string representation of the integer, in
+                    the given language
     """
 
     obj = Int2str()
