@@ -132,10 +132,10 @@ class TidesApp():
          "^\s*" +
          "(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+" +
          "(?P<dayno>\d+)\s+" +
-         "(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>(?:▲|▼))\s+(?P<tide1_height>\d+.\d+)\s*ft\s+" +
-         "(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>(?:▲|▼))\s+(?P<tide2_height>\d+.\d+)\s*ft\s+" +
-         "(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>(?:▲|▼))\s+(?P<tide3_height>\d+.\d+)\s*ft\s+" +
-         "(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>(?:▲|▼))\s+(?P<tide4_height>\d+.\d+)\s*ft\s+|)" +
+         "(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>(?:▲|▼))\s+(?P<tide1_height>\d+(?:\.\d+|))\s*ft\s+" +
+         "(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>(?:▲|▼))\s+(?P<tide2_height>\d+(?:\.\d+|))\s*ft\s+" +
+         "(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>(?:▲|▼))\s+(?P<tide3_height>\d+(?:\.\d+|))\s*ft\s+" +
+         "(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>(?:▲|▼))\s+(?P<tide4_height>\d+(?:\.\d+|))\s*ft\s+|)" +
          "▲\s*(?P<sunrise>\d+:\d\d\s*(?:am|pm))\s+" +
          "▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$"
         )
@@ -212,7 +212,7 @@ class TidesApp():
             raise ValueError
         weekly_tides_one_location = []
         for i in range(7):
-            weekly_tides_one_location.append(self.parse_high_tide_data(weekly_tides_DOM[i].text))
+            weekly_tides_one_location += self.parse_high_tide_data(weekly_tides_DOM[i].text)
         return weekly_tides_one_location
 
     def mainapp(self):
@@ -232,7 +232,7 @@ class TidesApp():
         self.wait = wait = WebDriverWait(driver, 30)
         self.weekly_tides = {}
         for URL in self.locations:
-            self.weekly_tides[URL] = self.get_weekly_tides(URL)
+            self.weekly_tides[URL['URL']] = self.get_weekly_tides(URL['URL'])
 
         # TODO: Do something with the data!!!
 
