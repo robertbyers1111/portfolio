@@ -11,9 +11,9 @@ from cli_utils import process_command_line
 class Tests_cli_utils():
 
     @pytest.mark.parametrize("mock_cli", [
-        ['-f', 'sample_input.json'],
-        ['-f=sample_input.json'],
-        ['--file=sample_input.json'],
+        ['-f', 'sample_input_1.json'],
+        ['-f=sample_input_1.json'],
+        ['--file=sample_input_1.json'],
     ])
     def test_cli_utils_01(self, mock_cli):
         sys.argv[1:] = mock_cli
@@ -25,9 +25,9 @@ class Tests_cli_utils():
         (['-h'], SystemExit),
         (['--help'], SystemExit),
         (['bogus.dat'], SystemExit),
-        (['-g', 'sample_input.json'], SystemExit),
-        (['-f', 'sample_input.json', 'bogus.dat'], SystemExit),
-        (['-f=sample_input.json', 'bogus.dat'], SystemExit),
+        (['-g', 'sample_input_1.json'], SystemExit),
+        (['-f', 'sample_input_1.json', 'bogus.dat'], SystemExit),
+        (['-f=sample_input_1.json', 'bogus.dat'], SystemExit),
         (['-f'], SystemExit),
         (['--file'], SystemExit),
         (['-f', 'nofile.dat'], FileNotFoundError),
