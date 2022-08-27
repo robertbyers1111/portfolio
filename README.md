@@ -37,5 +37,5 @@ int2str is a small app which translates integers into their spoken-word equivale
 - Enum classes
 - Parametrized pytest test methods
 - Expected failure handling
-- General adherance to PEP8 and PEP257 recommendations, without being hobgobbled by them.
+- General adherance to PEP8 and PEP257, without being hobgobbled by either.
 
