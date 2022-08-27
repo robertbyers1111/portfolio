@@ -4,6 +4,7 @@ tests_tidesapp_viaSelenium.py - Unit tests for tidesapp_viaSelenium
 """
 
 import pytest
+import sys
 from datetime import datetime
 from freezegun import freeze_time
 from tidesapp_viaSelenium import TidesApp
@@ -49,6 +50,7 @@ class Tests_tidesapp_viaSelenium():
         observed = app.parse_high_tide_data(data)
         assert observed == expected
 
+
     @freeze_time(datetime(2022, 8, 22))
     @pytest.mark.parametrize("data, expected", [
         ('Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft 3:41pm ▼ 1.64 ft 9:17pm ▲ 7.55 ft ▲ 5:57am ▼ 7:35pm',
@@ -60,3 +62,15 @@ class Tests_tidesapp_viaSelenium():
         app = TidesApp()
         observed = app.parse_high_tide_data(data)
         assert observed == expected
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # TODO: Move test_mainapp_01() to an integration test suite
+
+    @pytest.mark.parametrize("mock_cli", [
+     ['-f', 'sample_input_1.json'],
+     ['-f', 'sample_input_2.json'],
+    ])
+    def test_mainapp_01(self, mock_cli):
+        sys.argv[1:] = mock_cli
+        app = TidesApp()
+        app.mainapp()
