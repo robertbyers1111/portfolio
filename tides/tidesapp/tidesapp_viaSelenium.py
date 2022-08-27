@@ -53,27 +53,29 @@ class TidesApp():
 
     """ Constants """
 
-    # URLs for querying tide data for specific location names. If charting geo-trends, best to keep this list
-    # in geographic north-to-south order.
+    # URLs for querying tide data for specific location names. If charting
+    # geo-trends, best to keep this list in geographic north-to-south order.
     DEFAULT_URLS = [
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salisbury/"},
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Newburyport/"},
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rowley/"},
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Crane-Beach/"},
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Wingaersheek-Beach/"},
-        {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rockport/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Salisbury/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Newburyport/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rowley/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Crane-Beach/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Wingaersheek-Beach/"},
+     {'URL': "https://www.tideschart.com/United-States/Massachusetts/Essex-County/Rockport/"},
     ]
 
     # XPATHs
-    weekly_table_xpath = r'//table/child::caption[contains(text(),"Tide table for") and contains(text(), "this week")]/../tbody/tr'
+    weekly_table_xpath = (
+        '//table/child::caption[contains(text(), "Tide table for") and contains(text(), "this week")]/../tbody/tr'
+    )
 
 
     def load_user_locations(self, file=None):
         """
         Load the list of locations from disk into the tidesapp object.
 
-        Basic sanity checks are performed, after which the list is
-        saved and the method returns.
+        Basic sanity checks are performed, after which the list is saved
+        and the method returns.
 
         Args:
         file - (str) A JSON-formatted file containing a list of URLs.
@@ -126,15 +128,17 @@ class TidesApp():
         # This regex will parse any data adhering to the format
         # in the above examples..
 
-        pattern = re.compile("^\s*" + \
-        "(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+" + \
-        "(?P<dayno>\d+)\s+" + \
-        "(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>(?:▲|▼))\s+(?P<tide1_height>\d+.\d+)\s*ft\s+" + \
-        "(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>(?:▲|▼))\s+(?P<tide2_height>\d+.\d+)\s*ft\s+" + \
-        "(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>(?:▲|▼))\s+(?P<tide3_height>\d+.\d+)\s*ft\s+" + \
-        "(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>(?:▲|▼))\s+(?P<tide4_height>\d+.\d+)\s*ft\s+|)" + \
-        "▲\s*(?P<sunrise>\d+:\d\d\s*(?:am|pm))\s+" + \
-        "▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$")
+        pattern = re.compile(
+         "^\s*" +
+         "(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+" +
+         "(?P<dayno>\d+)\s+" +
+         "(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>(?:▲|▼))\s+(?P<tide1_height>\d+.\d+)\s*ft\s+" +
+         "(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>(?:▲|▼))\s+(?P<tide2_height>\d+.\d+)\s*ft\s+" +
+         "(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>(?:▲|▼))\s+(?P<tide3_height>\d+.\d+)\s*ft\s+" +
+         "(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>(?:▲|▼))\s+(?P<tide4_height>\d+.\d+)\s*ft\s+|)" +
+         "▲\s*(?P<sunrise>\d+:\d\d\s*(?:am|pm))\s+" +
+         "▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$"
+        )
 
         # Get rid of all newlines in the data stream, they may be
         # safely ignored in this method
@@ -150,7 +154,7 @@ class TidesApp():
         this_day = day2datetime(matched.group('dayno'))
 
         # Assemble the list of tides
-        this_day_tides = []
+        this_day_high_tides = []
         for timestr, hilo in [
             (matched.group('tide1_time'), matched.group('tide1_hilo')),
             (matched.group('tide2_time'), matched.group('tide2_hilo')),
@@ -162,24 +166,21 @@ class TidesApp():
                 # ok, it is for a high tide! Continue processing..
 
                 # Convert time (e.g., "3:32 am") to a datetime object
-                this_tide_time = timestr2time(timestr)
+                this_high_tide_time = timestr2time(timestr)
                 # Combine with the day's datetime
-                this_tide_datetime = date_time_combine(this_day,
-                                                       this_tide_time)
+                this_high_tide_datetime = date_time_combine(
+                    this_day, this_high_tide_time)
                 # Append the datetime
-                this_day_tides.append(this_tide_datetime)
+                this_day_high_tides.append(this_high_tide_datetime)
 
-        if len(this_day_tides) < 1:
+        if len(this_day_high_tides) < 1:
             print(f"ERROR: No high tide data found for: {data}")
             raise ValueError
-        if len(this_day_tides) > 2:
+        if len(this_day_high_tides) > 2:
             print(f"ERROR: Too many high tides found for: {data}")
             raise ValueError
 
-        # TODO..
-        # Return the list of tides for this location
-
-        return []
+        return this_day_high_tides
     
     def get_weekly_tides(self, URL):
         """

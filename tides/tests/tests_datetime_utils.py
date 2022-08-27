@@ -44,8 +44,15 @@ class Tests_datetime_utils():
             d = day2datetime(i)
             assert d.year == 2022 and d.month == 7 and d.day == i
 
-    @freeze_time(datetime(2022, 12, 28))
+    @freeze_time(datetime(2022, 8, 22))
     def test_datetime_utils_04(self):
+        """No overflow. Normal date"""
+        for i in range(22, 28):
+            d = day2datetime(i)
+            assert d.year == 2022 and d.month == 8 and d.day == i
+
+    @freeze_time(datetime(2022, 12, 28))
+    def test_datetime_utils_05(self):
         """Month and year overflow."""
         for i in range(1, 5):
             d = day2datetime(i)
