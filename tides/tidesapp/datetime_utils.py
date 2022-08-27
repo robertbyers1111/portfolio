@@ -5,6 +5,7 @@ A module for manipulating dates and times for the tidesapp app.
 
 from datetime import datetime, date
 
+
 def day2datetime(queried_day: int):
     """
     Accepts a day-of-month. Returns datetime object equivalent.
@@ -58,6 +59,7 @@ def day2datetime(queried_day: int):
     # Return the desired datetime
     return datetime(queried_year, queried_month, queried_day)
 
+
 def timestr2time(timestr):
     """
     Input "HH:MM AM" or "HH:MM PM". Returns a python datetime object.
@@ -77,6 +79,7 @@ def timestr2time(timestr):
     timestr = ''.join(timestr.split())
     # Return the datetime object
     return datetime.strptime(timestr, "%I:%M%p")
+
 
 def date_time_combine(dateval, timeval):
     """

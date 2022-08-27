@@ -49,7 +49,8 @@ from datetime_utils import (day2datetime, timestr2time,
                             date_time_combine)
 from cli_utils import process_command_line
 
-class TidesApp():
+
+class TidesApp:
 
     """ Constants """
 
@@ -69,6 +70,8 @@ class TidesApp():
         '//table/child::caption[contains(text(), "Tide table for") and contains(text(), "this week")]/../tbody/tr'
     )
 
+    def __init__(self):
+        self.locations = []
 
     def load_user_locations(self, file=None):
         """
@@ -90,7 +93,7 @@ class TidesApp():
         else:
             with open(file) as fh:
                 data = json.load(fh)
-                if not 'URLs' in data.keys():
+                if 'URLs' not in data.keys():
                     print(f"ERROR: No URLs retrieved from {file}")
                     raise ValueError
                 else:
@@ -102,7 +105,6 @@ class TidesApp():
             if not location['URL'].startswith(
                     r"https://www.tideschart.com/"):
                 raise ValueError
-
 
     def parse_high_tide_data(self, data):
         """
@@ -207,12 +209,12 @@ class TidesApp():
 
         self.driver.get(URL)
         self.wait.until(EC.presence_of_element_located((By.XPATH, TidesApp.weekly_table_xpath)))
-        weekly_tides_DOM = self.driver.find_elements_by_xpath(TidesApp.weekly_table_xpath)
-        if not len(weekly_tides_DOM) == 7:
+        weekly_tides_dom = self.driver.find_elements_by_xpath(TidesApp.weekly_table_xpath)
+        if not len(weekly_tides_dom) == 7:
             raise ValueError
         weekly_tides_one_location = []
         for i in range(7):
-            weekly_tides_one_location += self.parse_high_tide_data(weekly_tides_DOM[i].text)
+            weekly_tides_one_location += self.parse_high_tide_data(weekly_tides_dom[i].text)
         return weekly_tides_one_location
 
     def mainapp(self):
@@ -229,7 +231,7 @@ class TidesApp():
         file = process_command_line()
         self.load_user_locations(file)
         self.driver = driver = webdriver.Chrome()
-        self.wait = wait = WebDriverWait(driver, 30)
+        self.wait = WebDriverWait(driver, 30)
         self.weekly_tides = {}
         for URL in self.locations:
             self.weekly_tides[URL['URL']] = self.get_weekly_tides(URL['URL'])
@@ -238,6 +240,7 @@ class TidesApp():
 
         # That is all for now
         driver.close()
+
 
 if __name__ == '__main__':
     TidesApp().mainapp()

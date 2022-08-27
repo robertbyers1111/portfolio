@@ -1,6 +1,6 @@
 #!/bin/env python3
 """
-tests_tidesapp_viaSelenium.py - Unit tests for tidesapp_viaSelenium
+Unit tests for tidesapp_viaSelenium
 """
 
 import pytest
@@ -9,7 +9,8 @@ from datetime import datetime
 from freezegun import freeze_time
 from tidesapp_viaSelenium import TidesApp
 
-class Tests_tidesapp_viaSelenium():
+
+class Tests_tidesapp_viaSelenium:
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("filename", ['../tests/nosuchfile.json'])
@@ -22,7 +23,6 @@ class Tests_tidesapp_viaSelenium():
     def test_load_user_locations_02(self, filename):
         app = TidesApp()
         app.load_user_locations()
-
 
     @pytest.mark.parametrize("filename", ['../tests/sample_input.json'])
     def test_load_user_locations_03(self, filename):
@@ -49,7 +49,6 @@ class Tests_tidesapp_viaSelenium():
         app = TidesApp()
         observed = app.parse_high_tide_data(data)
         assert observed == expected
-
 
     @freeze_time(datetime(2022, 8, 22))
     @pytest.mark.parametrize("data, expected", [

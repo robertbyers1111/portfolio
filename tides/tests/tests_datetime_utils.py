@@ -1,6 +1,6 @@
 #!/bin/env python3
 """
-tests_datetime_utils - Unit tests for tideapp's datetime utilities
+Unit tests for tideapp's datetime utilities
 """
 
 import pytest
@@ -8,7 +8,8 @@ from datetime import datetime
 from freezegun import freeze_time
 from datetime_utils import day2datetime, timestr2time
 
-class Tests_datetime_utils():
+
+class Tests_datetime_utils:
 
     """
     Each test uses freeze_time (from the freezegun pytest plugin) to

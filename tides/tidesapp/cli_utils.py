@@ -1,11 +1,12 @@
 #!/bin/env python3
 """
-MODULE: cli_utils - A module for processing the user's command line.
+A module for processing the user's command line (for tidesapp only).
 """
 
 import argparse
 import os
 import sys
+
 
 def process_command_line():
     """

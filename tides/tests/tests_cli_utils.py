@@ -1,6 +1,6 @@
 #!/bin/env python3
 """
-tests_cli_utils - Unit tests for tideapp's cli utility
+Unit tests for tideapp's cli utility
 """
 
 import pytest
@@ -8,7 +8,8 @@ import sys
 import os
 from cli_utils import process_command_line
 
-class Tests_cli_utils():
+
+class Tests_cli_utils:
 
     @pytest.mark.parametrize("mock_cli", [
         ['-f', 'sample_input_1.json'],
@@ -36,4 +37,3 @@ class Tests_cli_utils():
         sys.argv[1:] = mock_cli
         with pytest.raises(expected_error):
             process_command_line()
-
