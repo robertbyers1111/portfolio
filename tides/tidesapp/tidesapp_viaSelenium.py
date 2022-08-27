@@ -223,16 +223,20 @@ class TidesApp():
         Parsing the user's command line
         Loading the user's location URLs into the app
         Initializing the webdriver
-        Calling the weekly tides retriver for each of the locations
+        Calling the weekly tides retriever for each location
         """
 
         file = process_command_line()
         self.load_user_locations(file)
         self.driver = driver = webdriver.Chrome()
         self.wait = wait = WebDriverWait(driver, 30)
-        weekly_tides = {}
+        self.weekly_tides = {}
         for URL in self.locations:
-            weekly_tides[URL] = self.get_weekly_tides(URL)
+            self.weekly_tides[URL] = self.get_weekly_tides(URL)
+
+        # TODO: Do something with the data!!!
+
+        # That is all for now
         driver.close()
 
 if __name__ == '__main__':
