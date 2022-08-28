@@ -66,10 +66,18 @@ class Tests_tidesapp_viaSelenium:
     # TODO: Move test_mainapp_01() to an integration test suite
 
     @pytest.mark.parametrize("mock_cli", [
-     ['-f', 'sample_input_1.json'],
-     ['-f', 'sample_input_2.json'],
+        ['-f', 'sample_input_URLs_1.json'],
+        ['-f', 'sample_input_URLs_2.json'],
+        ])
+    def test_mainapp_URLs_01(self, mock_cli):
+        sys.argv[1:] = mock_cli
+        app = TidesApp()
+        app.mainapp()
+
+    @pytest.mark.parametrize("mock_cli", [
+     ['-f', 'sample_input_munis_2.json'],
     ])
-    def test_mainapp_01(self, mock_cli):
+    def test_mainapp_munis_01(self, mock_cli):
         sys.argv[1:] = mock_cli
         app = TidesApp()
         app.mainapp()
