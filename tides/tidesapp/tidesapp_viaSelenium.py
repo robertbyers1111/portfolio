@@ -3,7 +3,7 @@
 Retrieve tide data for multiple sites. Process and display results.
 
 This application uses Selenium to visit a site containing tide charts. Tide data from one or more
-locations are gathered, processed and displayed.
+locations are gathered and processed.
 
 I selected tideschart.com for retrieving tide data. It supports retrieval of weekly tide data for
 most US beaches via a simple URL formulation. For example, to retrieve the current week's tide data
@@ -15,11 +15,14 @@ In addition, tideschart.com has a search feature, which is also used by this app
 
 This app operates in one of two modes..
 
-(1) if the input file contains URLs, the URLs are used to navigate directly to a location's tide
-data.
+[Operational Mode 1]
 
-(2) If the input file contains place names and hints, the place names are entered in the search box
-at tideschart.com, and the hints are used to find the desired place from the search results.
+    If the input file contains URLs, the URLs are used to navigate directly to a location's tide data.
+
+[Operational Mode 2]
+
+    If the input file contains place names and hints, the place names are entered in the search box
+    at tideschart.com, and the hints are used to find the desired place from the search results.
 
 Command line usage..
 
@@ -28,7 +31,7 @@ Command line usage..
 where file is a JSON file containing either a list of URLs or a list of place names and hints.
 There is no specific limit on the number of URLs or places, tidesapp will query tide data from each.
 
-This script should run from most any system with python, selenium and the Chrome webdriver. There
+This script should run on most systems with python, selenium and the Chrome webdriver. There
 are some OS-specific (linux) operations that require running the app's test suite in a linux
 environment (*todo: remove this limitation!*).
 
@@ -48,8 +51,8 @@ Example JSON for operational mode 2 (place names and hints)..
 
 {
     "URLs": [
-        {'MUNI': "Salisbury, MA, USA", 'HINT': "Salisbury, Essex County, Massachusetts - USA"},
-        {'MUNI': "Newburyport, MA, USA", 'HINT': "Newburyport, Essex County, Massachusetts - USA"}
+        {"MUNI": "Salisbury, MA", "HINT": "United-States/Massachusetts/Essex-County/Salisbury/"},
+        {"MUNI": "Newburyport, MA", "HINT": "United-States/Massachusetts/Essex-County/Newburyport/"},
     ]
 }
 """
@@ -84,35 +87,38 @@ class Modes(Enum):
 
 def backoff():
     """
-    This generator function is used in loops that retry an operation, but wait progressively longer
-    each after each attempt.
-
-    This is particularly useful for searching for web elements. We retry our search for an element
-    relatively quickly at first, but after a few attempts we realize we probably should wait a bit
-    longer before the next attempt.
-
-    The list cycles back to the start after several iterations - we don't want to cause ever-increasing
-    sleeps without bound. It is OK to restart from the beginning after several long pauses.
+    This generator function is used by loops that need to pause for progressively longer times after each
+    iteration. The values returned can be used by the caller as seconds to sleep. The early retries have
+    relatively short pauses. The pauses increase with each iteration until we hit a max value, after which
+    we always return the max.
 
     Args..
-    (none)
 
-    Returns..
-    sleep (int) The next value of sleep from the sequence of sleep values
+        (none)
+
+    Yields..
+
+        sleep (int) The next sleep value from the sequence of sleep values
     """
-    sleeps = [2, 4, 8, 12, 20, 32, 48, 64] * 10000 # (if we ever hit 10,000 calls, something is srsly WRONG)
+
+    sleeps = [2, 4, 8, 12, 20, 32, 48] + [60]*1440  # (enough for ~24 hours of retries)
+
     for sleep in sleeps:
         yield sleep
 
 
 class TidesApp:
+    """
+    This class implements the primary operations and properties required of the tidesapp application
+    """
 
     """ Constants """
 
     BASE_URL = "https://www.tideschart.com"
 
-    # URLs for querying tide data for specific location names. If charting
-    # geo-trends, best to keep this list in geographic north-to-south order.
+    # Default URLs for querying tide data for specific location names. This is used only if
+    # no filename is provided on the command line.
+
     DEFAULT_URLS = [
      {'URL': BASE_URL + "/United-States/Massachusetts/Essex-County/Salisbury/"},
      {'URL': BASE_URL + "/United-States/Massachusetts/Essex-County/Newburyport/"},
@@ -122,9 +128,11 @@ class TidesApp:
      {'URL': BASE_URL + "/United-States/Massachusetts/Essex-County/Rockport/"},
     ]
 
-    # Municipalities for searching via tideschart's search box. The first string of
-    # each list 
-    # the municipality in the search results.
+    # Municipalities for searching via tideschart's search box. The 'MUNI' data
+    # are the strings entered into tideschart's search box. The 'HINT' data are
+    # used to locate the desired search result from among the myriad results that
+    # are typically returned by tideschart's search tool.
+
     DEFAULT_MUNIS = [
      {'MUNI': "Salisbury, MA, USA", 'HINT': "/United-States/Massachusetts/Essex-County/Salisbury/"},
      {'MUNI': "Newburyport, MA, USA", 'HINT': "/United-States/Massachusetts/Essex-County/Newburyport/"},
@@ -176,13 +184,20 @@ class TidesApp:
                If no filename is passed in, a default list is loaded.
 
         Returns: (nothing)
+
+        Other:
+
+            Once the data are loaded, we detect whether it is for URLs or for municipalities and hints.
+            In the former case we set self.mode to URLs. In the latter case, self.mode is set to MUNIs.
         """
 
         if file is None:
             self.locations = TidesApp.DEFAULT_URLS
         else:
             with open(file) as fh:
+
                 data = json.load(fh)
+
                 if 'URLs' in data.keys():
                     self.mode = Modes.URLs
                     self.locations = data['URLs']
@@ -192,6 +207,8 @@ class TidesApp:
                 else:
                     print(f"ERROR: No valid data retrieved from {file}")
                     raise ValueError
+
+        # Sanity checks
 
         if self.mode is Modes.URLs:
             for location in self.locations:
@@ -212,27 +229,29 @@ class TidesApp:
 
     def parse_high_tide_data(self, data):
         """
-        Parse a single row data. Return a list of high tides.
+        Parse a single row of tides data. Return a list of high tides.
 
         Args..
-        data (str): A string extracted from the DOM for one row.
-             Contains tide data for one day.
+
+        data (str): A string extracted from the DOM for one row. Contains tide data for only one day.
 
         Returns..
-        tides[]: a list of high tide times (times are expressed
-                 as python datetime
+
+        tides[]: a list of high tide times (times are expressed as python datetime
         """
 
         # Sample data to be parsed:
         # 'Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft 3:41pm ▼ 1.64 ft 9:17pm ▲ 7.55 ft ▲ 5:57am ▼ 7:35pm'
         # 'Mon 22 3:36am ▼ 0.98 ft 9:09am ▲ 6.56 ft 3:41pm ▼ 1.64 ft ▲ 5:57am ▼ 7:35pm'
+        #
         # Notes..
+        #
         # (1) The web page indicates high tide with unicode character
-        # up triangle, and low tide with down triangle.
+        #     up triangle, and low tide with down triangle.
+        #
         # (2) It is possible to have only three tides in a day!
 
-        # This regex will parse any data adhering to the format
-        # in the above examples..
+        # The following regex will parse any data adhering to the format in the above examples..
 
         pattern = re.compile(
          "^\s*" +
@@ -246,12 +265,13 @@ class TidesApp:
          "▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$"
         )
 
-        # Get rid of all newlines in the data stream, they may be
-        # safely ignored in this method
+        # Get rid of all newlines in the data stream, they may be safely ignored in this method
         data = re.sub('\n', ' ', data)
 
         # Parse the row's data..
+
         matched = re.match(pattern, data)
+
         if not matched:
             print(f"ERROR: Tide data not parsed: {data}")
             raise ValueError
@@ -292,9 +312,9 @@ class TidesApp:
         """
         Retrive tide data for one location. Return a list of tides for the upcoming week.
 
-        This is 'operational mode 1'
+        This method is only for operational mode 1.
 
-        This method navigates the browser to a URL which renders weekly tide data for a
+        This method navigates the browser to a URL which renders weekly tide data for one
         particular location.
 
         The table of tide data is located in the DOM and, for each day in the table, the
@@ -318,6 +338,7 @@ class TidesApp:
 
         if not len(weekly_tides_dom) == 7:
             raise ValueError
+
         weekly_tides_one_location = []
 
         for i in range(7):
@@ -329,7 +350,7 @@ class TidesApp:
         """
         Retrive tide data for one location. Return a list of tides for the upcoming week.
 
-        This is 'operational mode 2'
+        This method is only for operational mode 2.
 
         This version interracts with the search box at www.tideschart.com in order to
         bring up the tide chart for the requested location.
@@ -339,22 +360,29 @@ class TidesApp:
 
         The browser object (self.driver) is assumed to have already been created.
 
+        NOTE: The site (tideschart.com) implements a throttling mechanism which prevents us
+        from issuing too many searches in a certain time period. This method contains a
+        while-loop which will retry the search several times. Eventually one of our searches
+        succeeds.
+
         Args..
 
         municipality (dict): A dictionary with the following keys..
 
-        municipality['MUNI'] (str): The name of a location to be entered in the search box at
-                            www.tideschart.com. Use either format "TownOrCity, State". Can also
-                            be set to a zip code.
+            ['MUNI'] (str): The name of a location to be entered in the search box at
+                            www.tideschart.com. Format is "TownOrCity, State". Can also be set
+                            to a zip code.
 
-        municipality['HINT'] (str): A pattern used to locate the location's link in the search results.
+            ['HINT'] (str): A pattern used to locate the location's link in the search results.
 
         Returns..
 
         weekly_tides, a list of high tides over one week for a particular location
         """
 
-        # Embed the hint pattern into the XPATH for finding the search result for this location
+        # Make an XPATH string from the template (TidesApp.SEARCH_RESULTS_XPATH). The template contains
+        # the string 'HINT' which needs to be replaced with the hint supplied by user via the input file.
+
         search_results_xpath = re.sub('HINT', municipality['HINT'], TidesApp.SEARCH_RESULTS_XPATH)
 
         this_result = None
