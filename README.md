@@ -11,7 +11,7 @@ Note: (Aug. 2022) This portfolio is a work-in-progress. Appologies if it seems m
 
 ------------
 
-#### tidesapp
+#### [tidesapp](https://github.com/robertbyers1111/portfolio/tree/master/tides)
 
 tidesapp is an application that gathers high tide data for a number of locations and reports the results to the user. This is a new app I started on 8/23/2022. My intention is that it will grow over the next days or weeks to encompass some additional features. These are some of the skills this app highlights..
 
@@ -23,10 +23,11 @@ tidesapp is an application that gathers high tide data for a number of locations
 - JSON parsing
 - Command line parsing with *argparse*
 - Regular expressions (advanced)
+- Generator (yield) functions
 
 ------------
 
-#### int2str
+#### [int2str](https://github.com/robertbyers1111/portfolio/tree/master/int2str)
 
 int2str is a small app which translates integers into their spoken-word equivalent (e.g., input: 55, output: 'fifty five'). This app highlights the following skills...
 
