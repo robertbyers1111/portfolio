@@ -1,0 +1,21 @@
+{
+    "MUNIs": [
+        {"MUNI": "Salisbury, MA", "HINT": "United-States/Massachusetts/Essex-County/Salisbury/"},
+        {"MUNI": "Newburyport, MA", "HINT": "United-States/Massachusetts/Essex-County/Newburyport/"},
+        {"MUNI": "Rowley, MA", "HINT": "United-States/Massachusetts/Essex-County/Rowley/"},
+        {"MUNI": "Wingaersheek Beach, MA", "HINT": "United-States/Massachusetts/Essex-County/Wingaersheek-Beach/"},
+        {"MUNI": "Rockport, MA", "HINT": "United-States/Massachusetts/Essex-County/Rockport/"},
+        {"MUNI": "Good Harbor Beach, MA", "HINT": "United-States/Massachusetts/Essex-County/Good-Harbor-Beach/"},
+        {"MUNI": "Gloucester, MA", "HINT": "United-States/Massachusetts/Essex-County/Gloucester/"},
+        {"MUNI": "Singing Beach, MA", "HINT": "United-States/Massachusetts/Essex-County/Singing-Beach/"},
+        {"MUNI": "Manchester Harbor, MA", "HINT": "United-States/Massachusetts/Essex-County/Manchester-Harbor/"},
+        {"MUNI": "Beverly Cove, MA", "HINT": "United-States/Massachusetts/Essex-County/Beverly-Cove/"},
+        {"MUNI": "Salem, MA", "HINT": "United-States/Massachusetts/Essex-County/Salem/"},
+        {"MUNI": "Rice Beach, MA", "HINT": "United-States/Massachusetts/Essex-County/Rice-Beach/"},
+        {"MUNI": "Salem Harbor, MA", "HINT": "United-States/Massachusetts/Essex-County/Salem-Salem-Harbor/"},
+        {"MUNI": "Marblehead Harbor, MA", "HINT": "United-States/Massachusetts/Essex-County/Marblehead-Harbor/"},
+        {"MUNI": "Riverhead Beach, MA", "HINT": "United-States/Massachusetts/Essex-County/Riverhead-Beach/"},
+        {"MUNI": "Phillips Beach, MA", "HINT": "United-States/Massachusetts/Suffolk-County/Phillips-Beach/"}
+    ]
+}
+
