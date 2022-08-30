@@ -38,10 +38,10 @@ The source code for the app itself is in the tides/tidesapp folder. The code for
 
 |  Folder | File   | Description   |
 | ------------ | ------------ | ------------ |
-| tides/tidesapp   | tidesapp_viaSelenium.py  | This is the main application source  |
+| tides/tidesapp   | tidesapp.py  | This is the main application source  |
 | tides/tidesapp   | cli_utils.py  | Methods for parsing tidesapp's command line  |
 | tides/tidesapp   | datetime_utils.py  | Methods for converting dates and times from the rendered DOM elements into python datetime constructs  |
-| tides/tests  | tests_tidesapp_viaSelenium.py  | pytest suite for the main application  |
+| tides/tests  | tests_tidesapp.py  | pytest suite for the main application  |
 | tides/tests  | tests_cli_utils.py  | pytest unit testing for the CLI utilities  |
 | tides/tests  | tests_datetime_utils.py  | pytest unit testing for the datetime utilities  |
 | tides/tests  | sample_input.json  | Persistent test input  |
