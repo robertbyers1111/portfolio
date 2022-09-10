@@ -32,7 +32,7 @@ def process_command_line():
     parser.add_argument('-f', '--file')
     args = parser.parse_args(sys.argv[1:])
     if not args.file:
-        return None
+        raise ValueError
     if not os.path.isfile(args.file):
         print(f"ERROR: {args.file} does not exist or is not a file")
         raise FileNotFoundError

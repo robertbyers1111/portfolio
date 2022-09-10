@@ -6,8 +6,14 @@
 
 My name is Robert Byers. This portfolio attempts to highlight some of the various skills I have acquired from over 30 years in the fields of test automation, QA, IT, application programming, and customer support.
 
-Note: (Aug. 2022) This portfolio is a work-in-progress. Appologies if it seems minimal at this time. I am working dilligently to get additional quality work uploaded in a timely fashion!
+Note: (Sep. 2022) This portfolio is a work-in-progress. Appologies if it seems minimal at this time. I am working dilligently to get additional quality work uploaded in a timely fashion!
 
+
+------------
+
+#### [pybluez_ez](https://github.com/robertbyers1111/portfolio/tree/master/pybluez_ez)
+
+pybluez_ez is a module that exposes the bluetoothctl command line utility to a Python API. One unique aspect of this module is the use of Python's asyncio features.
 
 ------------
 
