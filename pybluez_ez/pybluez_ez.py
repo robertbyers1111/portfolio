@@ -136,7 +136,7 @@ def run_btsvc_cmd(subcmd, verbose=None, fail_to_exception=None):
 
     if verbose:
         print()
-        print(f"CMD: {full_cmd}")
+        print(f"CMD: {' '.join(full_cmd)}")
         print(f"rc: {rc}")
         print(f"{stdout.decode()}")
 
@@ -183,7 +183,7 @@ def run_btctl_cmd(subcmd, verbose=None, fail_to_exception=None):
 
     if verbose:
         print()
-        print(f"CMD: {full_cmd}")
+        print(f"CMD: {' '.join(full_cmd)}")
         print(f"rc: {rc}")
         print(f"{stdout.decode()}")
 
@@ -205,6 +205,7 @@ class Pybluez_ez:
         assert_exists_and_executable(self.bluetoothctl)
         assert_exists_and_executable(self.initd_bluetooth)
         self.bt_settings = {}
+        self.device_settings = {}
         self.bt_scanning_proc = None
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -236,8 +237,10 @@ class Pybluez_ez:
         return rc, stdout
 
     def cancel_pairing(self, device):
-        rc, stdout = run_btctl_cmd(["cancel-pairing", device])
-        return rc, stdout
+        """TODO: this command blocks indefinitely. Need to fork a process and kill it when finished"""
+        return None
+        #    rc, stdout = run_btctl_cmd(["cancel-pairing", device])
+        #    return rc, stdout
 
     def connect(self, device):
         rc, stdout = run_btctl_cmd(["connect", device])
@@ -299,9 +302,9 @@ class Pybluez_ez:
 
         self.bt_settings = {}
 
-        pattern1 = re.compile("^\s*(?P<key>UUID:\s+[^(]+)\((?P<value>.*)\)\s*$")
-        pattern2 = re.compile("^\s*(?P<key>[^:]+):\s+(?P<value>.*)$")
-        pattern3 = re.compile("^\s*(?P<key>Controller)\s+(?P<value>\S+)")
+        pattern1 = re.compile(r"^\s*(?P<key>UUID:\s+[^(]+)\((?P<value>.*)\)\s*$")
+        pattern2 = re.compile(r"^\s*(?P<key>[^:]+):\s+(?P<value>.*)$")
+        pattern3 = re.compile(r"^\s*(?P<key>Controller)\s+(?P<value>\S+)")
 
         for line in stdout.decode().split('\n'):
             line = line.lower()
@@ -331,27 +334,27 @@ class Pybluez_ez:
             print("Checking if scanning is enabled..")
         else:
             print("Checking if scanning is disabled..")
+
         rc, stdout, bt_settings = btctl.show(verbose=False)
+
         if 'discovering' not in bt_settings.keys():
+            # this is bad and should not happen. ever.
             print('ERROR: Unable to determine if bluetooth scanning is already enabled.', file=sys.stderr)
-            raise ValueError
-        if bt_settings['discovering'] == 'yes':
-            if check_if_enabled:
-                print('Confirmed that scanning is currently enabled. Returning True.')
+            raise KeyError
+        if check_if_enabled:
+            if bt_settings['discovering'] == 'yes':
+                print('Scanning is enabled. Returning True.')
                 return True
             else:
-                print('Scanning is not currently enabled. Returning False.')
-                return False
-        elif bt_settings['discovering'] == 'no':
-            if check_if_enabled:
                 print('Scanning is disabled. Returning False.')
                 return False
-            else:
-                print('Confirmed that scanning is currently disabled. Returning True.')
-                return True
         else:
-            print(f"ERROR: invalid value for bluetooth discover mode: {bt_settings['discovering']}", file=sys.stderr)
-            raise ValueError
+            if bt_settings['discovering'] == 'no':
+                print('Scanning is disabled. Returning True.')
+                return True
+            else:
+                print('Scanning is enabled. Returning False.')
+                return False
 
     def check_if_scanning_enabled(self):
         return btctl.check_if_scanning(check_if_enabled=True)
@@ -366,9 +369,9 @@ class Pybluez_ez:
 
         Returns..
             proc - An asyncio process object representing the process that enabled scanning. This process continues
-                   running on the host after this method returns.
+                   running on the host after this method returns (and even after this python script finishes).
 
-                   Also, stores the process as a class attribute. This simplifies terminating the process at a later time.
+                   Also, we save proc as a class attribute. This simplifies terminating the process at a later time.
 
                    Returns None if scanning is already enabled.
         """
@@ -380,19 +383,20 @@ class Pybluez_ez:
             print('NOTICE: bluetooth scanning is already enabled. Not attempting to re-enable.', file=sys.stderr)
             return None
 
+        print(f"Starting asyncio process..")
+        print(f"Running command 'bluetoothctl scan on'")
         proc = asyncio.run(run_async(f'{Pybluez_ez.BLUETOOTHCTL} scan on'))
 
-        print('Pause pi seconds then confirm scanning was in fact enabled..')
+        print('Pausing pi seconds..')
         sleep(3.14159)
-
-        rc, stdout, bt_settings = btctl.show(verbose=False)
 
         if btctl.check_if_scanning_enabled():
             print('OK: bluetooth scanning is enabled.')
             self.bt_scanning_proc = proc
             return proc
         else:
-            print('Unable to enable bluetooth scanning', file=stderr)
+            # Sadness..
+            print('Unable to enable bluetooth scanning', file=sys.stderr)
             return None
 
     def scan_off_via_asyncio(self):
@@ -424,18 +428,26 @@ class Pybluez_ez:
         ACTIVE_OR_UNKNOWN = False
         INACTIVE = True
 
+        print()
+        print("Received request to disable bluetooth scanning by killing any asyncio processes")
+
+        if btctl.check_if_scanning_disabled():
+            print('NOTICE: bluetooth scanning is already disabled. Not attempting to disable.', file=sys.stderr)
+            return INACTIVE
+
         if self.bt_scanning_proc is not None:
             print("Found asyncio process for bluetooth scanning. Will attempt to terminate it..")
-
             self.bt_scanning_proc.kill()
+        else:
+            print("NOTICE: No asyncio processes found")
 
-            if btctl.check_if_scanning_disabled():
-                print('OK: bluetooth scanning is disabled.')
-                self.bt_scanning_proc = None
-                return INACTIVE
-            else:
-                print('WARNING: Unable to confirm bluetooth scanning was successfully disabled.', file=sys.stderr)
-                return ACTIVE_OR_UNKNOWN
+        if btctl.check_if_scanning_disabled():
+            print('OK: bluetooth scanning is disabled.')
+            self.bt_scanning_proc = None
+            return INACTIVE
+        else:
+            print('NOTICE: Unable to confirm bluetooth scanning was disabled.')
+            return ACTIVE_OR_UNKNOWN
 
     def scan_off_via_cli(self):
         """
@@ -446,7 +458,7 @@ class Pybluez_ez:
 
         Returns..
             True - If scanning is confirmed to be inactive
-            False - If scanning is active and we weren't able to disable it.
+            False - If scanning is active, and we weren't able to disable it.
         """
 
         # Constants for the return values..
@@ -463,24 +475,38 @@ class Pybluez_ez:
         print('Detected that scanning is currently enabled. Continue attempting to disable..')
 
         rc, stdout = run_btctl_cmd(["scan", "off"])
+        if rc != 0:
+            print(f"WARNING: 'bluetooth scan off' returned non-zero error code {rc}")
+        for line in stdout.decode().split('\n'):
+            print(line)
 
-        print('Pausing pi seconds then confirming scanning was in fact disabled..')
+        print('Pausing pi seconds..')
         sleep(3.14159)
-
-        rc, stdout, bt_settings = btctl.show(verbose=False)
 
         if btctl.check_if_scanning_disabled():
             print('OK: bluetooth scanning is disabled.')
             return INACTIVE
         else:
-            print('WARNING: Unable to confirm bluetooth scanning was successfully disabled.', file=sys.stderr)
+            # Uggh. not good.
+            print('NOTICE: Unable to confirm bluetooth scanning was disabled.')
             return ACTIVE_OR_UNKNOWN
 
     def scan_off_via_process_kill(self):
         """
         Brute force kill of the scanning process. This is needed because the "bluetoothctl scan off" command fails
         if an explicit "bluetoothctl scan on" command is already running on the host.
+
+        Note the if-statements below are exceedingly detailed ... but that is necessary in order to make sure we
+        do not kill an unintended process. We really need to make sure we're killing only the processes we truly
+        intend to kill.
         """
+
+        # Constants for the return values..
+        ACTIVE_OR_UNKNOWN = False
+        INACTIVE = True
+
+        print()
+        print("Received request to disable bluetooth scanning via searching all processes on the host and terminating any bt scan process")
 
         killed = 0
         for proc in psutil.process_iter(['name', 'cmdline', 'pid', 'username']):
@@ -493,6 +519,7 @@ class Pybluez_ez:
                         proc.kill()
                         killed += 1
 
+        # This section confirms that the kill was successful
         if killed > 0:
             for proc in psutil.process_iter(['name', 'cmdline', 'pid', 'username']):
                 if 'scan' in proc.cmdline():
@@ -500,32 +527,169 @@ class Pybluez_ez:
                         if 'bluetoothctl' in proc.info['cmdline'][0] \
                                 and proc.info['cmdline'][1] == 'scan' \
                                 and proc.info['cmdline'][2] == 'on':
-                            print(f'ERROR: bluetooth scanning proc still active: {proc}', file=stderr)
-                            return False
+                            print(f'ERROR: bluetooth scanning proc still active: {proc}', file=sys.stderr)
+                            return ACTIVE_OR_UNKNOWN
 
-        return True
+        print('Pausing pi seconds..')
+        sleep(3.14159)
+
+        if btctl.check_if_scanning_disabled():
+            print('OK: bluetooth scanning is disabled.')
+            return INACTIVE
+        else:
+            # Uggh. not good.
+            print('NOTICE: Unable to confirm bluetooth scanning was disabled.')
+            return ACTIVE_OR_UNKNOWN
 
     def scan_off(self):
         """
         Disable bluetooth scanning on the host's default controller. First we check if an asyncio process exists for the
-        bluetooth scanning and, if so, we terminate it. If that fails, we try via the bluetoothctrl CLI. If that fails,
+        bluetooth scanning and, if so, we terminate it. If that fails, we try via the bluetoothctl CLI. If that fails,
         our last attempt is to discover and kill any existing scanning processes.
         """
 
-        scan_status = self.scan_off_via_asyncio()
+        scan_status = self.scan_off_via_process_kill()
+        if not scan_status:
+            scan_status = self.scan_off_via_asyncio()
         if not scan_status:
             scan_status = self.scan_off_via_cli()
-        if not scan_status:
-            scan_status = self.scan_off_via_process_kill()
         return scan_status
+
+    def get_device_info(self, device):
+        """
+        Retrieve device info from the 'bluetoothctl info <device>' command and save the information to a dictionary.
+
+        Args..
+            device (str) - The MAC Address of the device to be queried
+
+        Returns..
+            info (dict) - A dictionary of all information returned by the "bluetoothctl info" command. Also,
+                          stores the same info in self.device_settings, keyed by the device ID.
+        """
+
+        rc, stdout = run_btctl_cmd(["info", device])
+
+        pattern0 = re.compile(r"%\s*device .* not available\s*$")
+        pattern1 = re.compile(r"^\s*(?P<key>uuid:\s+[^(]+)\((?P<value>.*)\)\s*$")
+        pattern2 = re.compile(r"^\s*(?P<key>[^:]+):\s+(?P<value>.*)$")
+        pattern3 = re.compile(r"^\s*(?P<key>device)\s+(?P<value>\S+)")
+
+        this_device_settings = {}
+
+        for line in stdout.decode().split('\n'):
+            line = line.lower()
+            for pattern in [pattern0, pattern1, pattern2, pattern3]:
+                parsed = re.match(pattern, line)
+                if pattern == pattern0:
+                    print(f"NOTICE: {device} not available")
+                    self.device_settings[device] = None
+                    return None
+                if parsed is not None:
+                    key = parsed.group('key').strip()
+                    value = parsed.group('value').strip()
+                    this_device_settings[key] = value
+                    break
+
+        # Before returning, make sure the most commonly used attributes were parsed..
+
+        for key in [
+            'alias',
+            'blocked',
+            'connected',
+            'name',
+            'paired',
+            'trusted',
+        ]:
+            try:
+                this_device_settings[key]
+            except KeyError:
+                print(f"ERROR: attribute {key} was not found in the output of bluetoothctl info {device}", file=sys.stderr)
+                raise KeyError
+
+        # That is all
+        self.device_settings[device] = this_device_settings
+        return this_device_settings
+
+    def add_device(self, device):
+        """
+        This high level API method makes a best effort attempt to add a bluetooth device.
+
+        If the device is already known to the system, it is removed so that adding it to the system occurs starting from
+        scratch.
+
+        Args..
+            device - The MAC address of the device to be added.
+        """
+
+        print()
+        print(f"Attempting to add device {device} to the host's default bluetooth subsystem..")
+
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # dispatcher = {
+        #     'is_blocked': btctl.unblock(device),
+        #     'is_connected': btctl.disconnect(device),
+        #     'is_paired': btctl.cancel_pairing(device)
+        #     'is_trusted': btctl.untrust(device),
+        # }
+        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        # But first, if we already know about the device in some way (connected, trusted, paired, etc.), let's
+        # get rid of it completely, so we can start with a clean slate. I've had spotty results starting with
+        # an already-known device
+
+        device_info = btctl.get_device_info(device)
+
+        if device_info is not None:
+
+            attempts = 0
+            max_attempts = 10
+            is_connected = False
+
+            while not is_connected and attempts < max_attempts:
+                attempts += 1
+
+                device_info = btctl.get_device_info(device)
+
+                if device_info is not None:
+
+                    is_blocked = device_info['blocked'] == 'yes'
+                    is_connected = device_info['connected'] == 'yes'
+                    is_paired = device_info['paired'] == 'yes'
+                    is_trusted = device_info['trusted'] == 'yes'
+
+                    if is_blocked:
+                        btctl.unblock(device)
+
+                    if is_connected:
+                        btctl.disconnect(device)
+
+                    if is_paired:
+                        btctl.cancel_pairing(device)
+
+                    if is_trusted:
+                        btctl.untrust(device)
+
+                    btctl.remove(device)
+
+        btctl.pair(device)
+        btctl.trust(device)
+        btctl.connect(device)
+
+        pass
 
 
 if __name__ == '__main__':
+
+    # TODO: Build a UI that allows for specific use cases. Right now the only use case is what appears here..
+
     btctl = Pybluez_ez()
     btctl.scan_off()
     btctl.status()
     btctl.show()
     btctl.devices()
     btctl.scan_on()
+    test_device = "58:FC:C6:40:41:19" # tozo t10
+    test_device = "50:C2:ED:13:15:0E" # jabra headset
+    btctl.add_device(test_device)
     print('Sleeping 8 seconds..')
     sleep(8)

@@ -66,10 +66,9 @@ from time import sleep
 import selenium.common.exceptions
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
-from datetime_utils import (day2datetime, timestr2time,
-                            date_time_combine)
+from datetime_utils import (day2datetime, timestr2time, date_time_combine)
 from cli_utils import process_command_line
 
 
@@ -80,9 +79,9 @@ class Modes(Enum):
     Operational Mode 1 (URLs) - Browser navigates directly to a location's tide table
     Operational Mode 2 (MUNIs) - Browser performs a location search to discover the URL of the tide table
     """
-    UNKNOWN = auto()
-    URLs = auto()
-    MUNIs = auto()
+    UNKNOWN = 1
+    URLs = 2
+    MUNIs = 3
 
 
 def backoff():
@@ -103,8 +102,8 @@ def backoff():
 
     sleeps = [2, 4, 8, 12, 20, 32, 48] + [60]*1440  # (enough for ~24 hours of retries)
 
-    for sleep in sleeps:
-        yield sleep
+    for this_sleep in sleeps:
+        yield this_sleep
 
 
 class TidesApp:
@@ -159,10 +158,12 @@ class TidesApp:
     MAX_TIMEOUTS = 10
 
     def __init__(self):
+        self.too_many_searches_errors = None
+        self.timeouts = None
         self.mode = Modes.UNKNOWN
         self.locations = []
-        self.quickwait = None
-        self.longwait = None
+        self.quick_wait = None
+        self.long_wait = None
         self.driver = None
         self.weekly_tides = None
         self.attempts = []
@@ -188,7 +189,7 @@ class TidesApp:
         Other:
 
             Once the data are loaded, we detect whether it is for URLs or for municipalities and hints.
-            In the former case we set self.mode to URLs. In the latter case, self.mode is set to MUNIs.
+            In the former case we set 'self.mode' to URLs. In the latter case, 'self.mode' is set to MUNIs.
         """
 
         if file is None:
@@ -212,7 +213,7 @@ class TidesApp:
 
         if self.mode is Modes.URLs:
             for location in self.locations:
-                if not 'URL' in location.keys():
+                if 'URL' not in location.keys():
                     raise KeyError
                 if not isinstance(location['URL'], str):
                     raise ValueError
@@ -220,7 +221,7 @@ class TidesApp:
                     raise ValueError
         elif self.mode is Modes.MUNIs:
             for location in self.locations:
-                if not 'MUNI' in location.keys() or not 'HINT' in location.keys():
+                if 'MUNI' not in location.keys() or 'HINT' not in location.keys():
                     raise KeyError
                 if not isinstance(location['MUNI'], str):
                     raise ValueError
@@ -254,15 +255,15 @@ class TidesApp:
         # The following regex will parse any data adhering to the format in the above examples..
 
         pattern = re.compile(
-         "^\s*" +
-         "(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+" +
-         "(?P<dayno>\d+)\s+" +
-         "(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>(?:▲|▼))\s+(?P<tide1_height>\d+(?:\.\d+|))\s*ft\s+" +
-         "(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>(?:▲|▼))\s+(?P<tide2_height>\d+(?:\.\d+|))\s*ft\s+" +
-         "(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>(?:▲|▼))\s+(?P<tide3_height>\d+(?:\.\d+|))\s*ft\s+" +
-         "(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>(?:▲|▼))\s+(?P<tide4_height>\d+(?:\.\d+|))\s*ft\s+|)" +
-         "▲\s*(?P<sunrise>\d+:\d\d\s*(?:am|pm))\s+" +
-         "▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$"
+         r"^\s*" +
+         r"(?P<day>Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+" +
+         r"(?P<day_no>\d+)\s+" +
+         r"(?P<tide1_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide1_hilo>[▲▼])\s+(?P<tide1_height>\d+(?:\.\d+|))\s*ft\s+" +
+         r"(?P<tide2_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide2_hilo>[▲▼])\s+(?P<tide2_height>\d+(?:\.\d+|))\s*ft\s+" +
+         r"(?P<tide3_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide3_hilo>[▲▼])\s+(?P<tide3_height>\d+(?:\.\d+|))\s*ft\s+" +
+         r"(?:(?P<tide4_time>\d+:\d\d\s*(?:am|pm))\s+(?P<tide4_hilo>[▲▼])\s+(?P<tide4_height>\d+(?:\.\d+|))\s*ft\s+|)" +
+         r"▲\s*(?P<sunrise>\d+:\d\d\s*(?:am|pm))\s+" +
+         r"▼\s*(?P<sunset>\d+:\d\d\s*(?:am|pm))\s*$"
         )
 
         # Get rid of all newlines in the data stream, they may be safely ignored in this method
@@ -277,7 +278,7 @@ class TidesApp:
             raise ValueError
 
         # Convert the day to a datetime
-        this_day = day2datetime(matched.group('dayno'))
+        this_day = day2datetime(matched.group('day_no'))
 
         # Assemble the list of tides
         this_day_high_tides = []
@@ -310,7 +311,7 @@ class TidesApp:
 
     def get_weekly_tides(self, URL):
         """
-        Retrive tide data for one location. Return a list of tides for the upcoming week.
+        Retrieve tide data for one location. Return a list of tides for the upcoming week.
 
         This method is only for operational mode 1.
 
@@ -333,7 +334,7 @@ class TidesApp:
         """
 
         self.driver.get(URL)
-        self.longwait.until(EC.presence_of_element_located((By.XPATH, TidesApp.WEEKLY_TABLE_XPATH)))
+        self.long_wait.until(ec.presence_of_element_located((By.XPATH, TidesApp.WEEKLY_TABLE_XPATH)))
         weekly_tides_dom = self.driver.find_elements_by_xpath(TidesApp.WEEKLY_TABLE_XPATH)
 
         if not len(weekly_tides_dom) == 7:
@@ -348,11 +349,11 @@ class TidesApp:
 
     def get_weekly_tides_via_search_box(self, municipality):
         """
-        Retrive tide data for one location. Return a list of tides for the upcoming week.
+        Retrieve tide data for one location. Return a list of tides for the upcoming week.
 
         This method is only for operational mode 2.
 
-        This version interracts with the search box at www.tideschart.com in order to
+        This version interacts with the search box at www.tideschart.com in order to
         bring up the tide chart for the requested location.
 
         The table of tide data is located in the DOM and, for each day in the table, the
@@ -393,22 +394,22 @@ class TidesApp:
         while still_searching and self.timeouts < TidesApp.MAX_TIMEOUTS:
 
             self.driver.get(TidesApp.BASE_URL)
-            searchbox_form = self.longwait.until(EC.presence_of_element_located((By.XPATH, TidesApp.SEARCHBOX_FORM_XPATH)))
+            searchbox_form = self.long_wait.until(ec.presence_of_element_located((By.XPATH, TidesApp.SEARCHBOX_FORM_XPATH)))
             searchbox_form.send_keys(municipality['MUNI'])
-            searchbox_click = self.longwait.until(EC.presence_of_element_located((By.XPATH, TidesApp.SEARCHBOX_CLICK_XPATH)))
+            searchbox_click = self.long_wait.until(ec.presence_of_element_located((By.XPATH, TidesApp.SEARCHBOX_CLICK_XPATH)))
             searchbox_click.click()
 
             try:
                 self.attempts.append([municipality['MUNI'], datetime.now()])
-                this_result = self.quickwait.until(EC.element_to_be_clickable((By.XPATH, search_results_xpath)))
+                this_result = self.quick_wait.until(ec.element_to_be_clickable((By.XPATH, search_results_xpath)))
             except (selenium.common.exceptions.TimeoutException, TimeoutError):
                 self.timeouts += 1
-                too_many = self.quickwait.until(EC.presence_of_element_located((By.XPATH, TidesApp.TOO_MANY_SEARCHES_XPATH)))
+                too_many = self.quick_wait.until(ec.presence_of_element_located((By.XPATH, TidesApp.TOO_MANY_SEARCHES_XPATH)))
                 if too_many is not None:
                     self.too_many_searches_errors += 1
-                sleepval = next(sleeper)
-                self.sleep_tracker.append([municipality['MUNI'], sleepval])
-                sleep(sleepval)
+                sleep_val = next(sleeper)
+                self.sleep_tracker.append([municipality['MUNI'], sleep_val])
+                sleep(sleep_val)
             finally:
                 if this_result is not None:
                     still_searching = False
@@ -418,7 +419,6 @@ class TidesApp:
             raise TimeoutError
 
         this_result.click()
-
 
     def mainapp(self):
         """
@@ -434,8 +434,8 @@ class TidesApp:
         file = process_command_line()
         self.load_user_locations(file)
         self.driver = driver = webdriver.Chrome()
-        self.quickwait = WebDriverWait(driver, 5)
-        self.longwait = WebDriverWait(driver, 30)
+        self.quick_wait = WebDriverWait(driver, 5)
+        self.long_wait = WebDriverWait(driver, 30)
         self.weekly_tides = {}
         if self.mode is Modes.URLs:
             for URL in self.locations:

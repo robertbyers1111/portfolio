@@ -49,4 +49,3 @@ async def run_async(cmd):
         cmd,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE)
-
